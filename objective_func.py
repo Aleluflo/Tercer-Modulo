@@ -6,6 +6,7 @@ import ta
 from utils import sharpe_ratio,sortino_ratio,calmar_ratio,win_loss_percentage
 from datos import N,rf
 
+
 def objective_func(trial, data):
     rsi_window = trial.suggest_int("rsi_window", 10, 100)
     rsi_lower = trial.suggest_int("rsi_lower", 10, 25)
@@ -46,7 +47,7 @@ def objective_func(trial, data):
     win = 0
     losses = 0
 
-    active_long_positions = None
+    active_long_positions = None  # una sola posicion activa de cada tipo
     active_short_positions = None
 
     for i, row in dataset.iterrows():
@@ -114,9 +115,9 @@ def objective_func(trial, data):
         portfolio_value.append(capital + long_value + short_value)
         returns = np.diff(portfolio_value) / portfolio_value[:-1]
 
-    sharpe = sharpe_ratio(dataset, rf, N)
-    sortino = sortino_ratio(dataset, N, rf)
-    calmar = calmar_ratio(dataset, N, rf)
-    win_loss = win_loss_percentage(dataset)
+    sharpe = sharpe_ratio(portfolio_value, rf, N)
+    sortino = sortino_ratio(portfolio_value, N, rf)
+    calmar = calmar_ratio(portfolio_value, N, rf)
+    win_loss = win_loss_percentage(portfolio_value)
 
     return sharpe

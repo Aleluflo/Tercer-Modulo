@@ -5,24 +5,25 @@ import optuna
 import ta
 from datos import data,rsi,bb,ema,dataset,rf,N
 
-def sharpe_ratio(dataset, rf, N):
-    returns = dataset["Close"].pct_change().dropna()
-    mean = returns.mean()
-    std = returns.std()
+
+def sharpe_ratio(portfolio_val, rf, N):
+    ds = pd.Series(portfolio_val)
+    returns = ds.pct_change().dropna()
+    mean = returns.mean()  # *N
+    std = returns.std()  # * np.sqrt(N)
+    if std == 0:
+        return 0
 
     sharpe_ratio = np.sqrt(N) * (mean / std)
 
     return sharpe_ratio
 
 
-sharpe = sharpe_ratio(dataset, rf, N)
-print(f"Ratio de Sharpe: {sharpe:.4f}")
-
 
 # Sortino
 
-def sortino_ratio(dataset, N,rf):
-    returns = dataset["Close"].pct_change().dropna()
+def sortino_ratio(portfolio_val, N, rf):
+    returns = pd.Series(portfolio_val).pct_change().dropna()
     mean_excess_return = (returns.mean() - rf) * N
     downside_std = returns[returns < 0].std() * np.sqrt(N)
 
@@ -30,25 +31,21 @@ def sortino_ratio(dataset, N,rf):
     if downside_std == 0:
         return np.nan
 
-    sortino_ratio = mean_excess_return / downside_std
+    sortino = mean_excess_return / downside_std
 
-    return sortino_ratio
-
-
-sortino = sortino_ratio(dataset, N, rf)
-print(f"Ratio de Sortino: {sortino:.4f}")
+    return sortino
 
 
 # Calmar
 
-def calmar_ratio(dataset, N, rf):
-    returns = dataset["Close"].pct_change().dropna()
+def calmar_ratio(portfolio_val, N, rf):
+    returns = pd.Series(portfolio_val).pct_change().dropna()
     annualized_return = (returns.mean() - rf) * N
 
-    cumulative_returns = (1 + returns).cumprod()
-    peak = cumulative_returns.cummax()
-    dd = (cumulative_returns / peak) - 1
-    max_dd = dd.min()
+    cumulative_returns = (1 + returns).cumprod()  # Crecimiento del portafolio
+    peak = cumulative_returns.cummax()  # Picos históricos
+    dd = (cumulative_returns / peak) - 1  # Drawdown en cada punto
+    max_dd = dd.min()  # Máximo drawdown registrado
 
     if max_dd == 0:
         return np.nan
@@ -58,16 +55,12 @@ def calmar_ratio(dataset, N, rf):
     return calmar_ratio
 
 
-calmar = calmar_ratio(dataset, N, rf)
-print(f"Ratio de Calmar: {calmar:.4f}")
-
-
 # Win/Loss
 
-def win_loss_percentage(dataset):
-    returns = dataset["Close"].pct_change().dropna()
-    wins = (returns > 0).sum()
-    total_trades = len(returns)
+def win_loss_percentage(portfolio_val):
+    returns = pd.Series(portfolio_val).pct_change().dropna()
+    wins = (returns > 0).sum()  # Retornos positivos
+    total_trades = len(returns)  # Total de operaciones
 
     if total_trades == 0:
         return np.nan
@@ -75,7 +68,3 @@ def win_loss_percentage(dataset):
     win_loss_ratio = (wins / total_trades) * 100
 
     return win_loss_ratio
-
-
-win_loss = win_loss_percentage(dataset)
-print(f"Win/Loss Percentage: {win_loss:.2f}%")
